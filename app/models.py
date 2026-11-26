@@ -95,6 +95,28 @@ followers = sa.Table(
 )
 
 
+likes = sa.Table(
+    'likes',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'),
+              primary_key=True),
+    sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'),
+              primary_key=True)
+)
+
+
+saved_posts = sa.Table(
+    'saved_posts',
+    db.metadata,
+    sa.Column('user_id', sa.Integer, sa.ForeignKey('user.id'),
+              primary_key=True),
+    sa.Column('post_id', sa.Integer, sa.ForeignKey('post.id'),
+              primary_key=True),
+    sa.Column('timestamp', sa.DateTime,
+              default=lambda: datetime.now(timezone.utc))
+)
+
+
 class User(PaginatedAPIMixin, UserMixin, db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     username: so.Mapped[str] = so.mapped_column(sa.String(64), index=True,
@@ -127,6 +149,10 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     notifications: so.WriteOnlyMapped['Notification'] = so.relationship(
         back_populates='user')
     tasks: so.WriteOnlyMapped['Task'] = so.relationship(back_populates='user')
+    liked_posts: so.WriteOnlyMapped['Post'] = so.relationship(
+        secondary=likes, back_populates='liked_by')
+    saved: so.WriteOnlyMapped['Post'] = so.relationship(
+        secondary=saved_posts, back_populates='saved_by')
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -176,6 +202,38 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             ))
             .group_by(Post)
             .order_by(Post.timestamp.desc())
+        )
+
+    def like(self, post):
+        if not self.has_liked(post):
+            self.liked_posts.add(post)
+
+    def unlike(self, post):
+        if self.has_liked(post):
+            self.liked_posts.remove(post)
+
+    def has_liked(self, post):
+        query = self.liked_posts.select().where(Post.id == post.id)
+        return db.session.scalar(query) is not None
+
+    def save_post(self, post):
+        if not self.has_saved(post):
+            self.saved.add(post)
+
+    def unsave_post(self, post):
+        if self.has_saved(post):
+            self.saved.remove(post)
+
+    def has_saved(self, post):
+        query = self.saved.select().where(Post.id == post.id)
+        return db.session.scalar(query) is not None
+
+    def get_saved_posts(self):
+        return (
+            sa.select(Post)
+            .join(saved_posts, saved_posts.c.post_id == Post.id)
+            .where(saved_posts.c.user_id == self.id)
+            .order_by(saved_posts.c.timestamp.desc())
         )
 
     def get_reset_password_token(self, expires_in=600):
@@ -293,11 +351,27 @@ class Post(SearchableMixin, db.Model):
     user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
                                                index=True)
     language: so.Mapped[Optional[str]] = so.mapped_column(sa.String(5))
+    edited: so.Mapped[Optional[datetime]]
 
     author: so.Mapped[User] = so.relationship(back_populates='posts')
+    liked_by: so.WriteOnlyMapped[User] = so.relationship(
+        secondary=likes, back_populates='liked_posts', passive_deletes=True)
+    saved_by: so.WriteOnlyMapped[User] = so.relationship(
+        secondary=saved_posts, back_populates='saved', passive_deletes=True)
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+
+    def likes_count(self):
+        query = sa.select(sa.func.count()).select_from(
+            self.liked_by.select().subquery())
+        return db.session.scalar(query)
+
+    def delete_with_relations(self):
+        db.session.execute(likes.delete().where(likes.c.post_id == self.id))
+        db.session.execute(
+            saved_posts.delete().where(saved_posts.c.post_id == self.id))
+        db.session.delete(self)
 
 
 class Message(db.Model):

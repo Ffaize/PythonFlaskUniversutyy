@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+from urllib.parse import urlsplit
 from flask import render_template, flash, redirect, url_for, request, g, \
-    current_app
+    current_app, abort
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 import sqlalchemy as sa
@@ -19,6 +20,7 @@ def before_request():
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
         g.search_form = SearchForm()
+        g.action_form = EmptyForm()
     g.locale = str(get_locale())
 
 
@@ -49,6 +51,14 @@ def index():
     return render_template('index.html', title=_('Home'), form=form,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+def redirect_back():
+    # повертаємо користувача на сторінку, з якої він натиснув кнопку
+    target = request.referrer
+    if target is None or urlsplit(target).netloc != request.host:
+        target = url_for('main.index')
+    return redirect(target)
 
 
 @bp.route('/explore')
@@ -239,3 +249,102 @@ def notifications():
         'data': n.get_data(),
         'timestamp': n.timestamp
     } for n in notifications]
+
+
+@bp.route('/post/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_post(id):
+    post = db.get_or_404(Post, id)
+    if post.author != current_user:
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        try:
+            language = detect(form.post.data)
+        except LangDetectException:
+            language = ''
+        post.body = form.post.data
+        post.language = language
+        post.edited = datetime.now(timezone.utc)
+        db.session.commit()
+        flash(_('Your post has been updated.'))
+        return redirect(url_for('main.user', username=current_user.username))
+    elif request.method == 'GET':
+        form.post.data = post.body
+    return render_template('edit_post.html', title=_('Edit Post'), form=form)
+
+
+@bp.route('/post/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_post(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = db.get_or_404(Post, id)
+        if post.author != current_user:
+            abort(403)
+        post.delete_with_relations()
+        db.session.commit()
+        flash(_('Your post has been deleted.'))
+    return redirect_back()
+
+
+@bp.route('/like/<int:id>', methods=['POST'])
+@login_required
+def like(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = db.get_or_404(Post, id)
+        current_user.like(post)
+        db.session.commit()
+    return redirect_back()
+
+
+@bp.route('/unlike/<int:id>', methods=['POST'])
+@login_required
+def unlike(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = db.get_or_404(Post, id)
+        current_user.unlike(post)
+        db.session.commit()
+    return redirect_back()
+
+
+@bp.route('/save/<int:id>', methods=['POST'])
+@login_required
+def save(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = db.get_or_404(Post, id)
+        current_user.save_post(post)
+        db.session.commit()
+        flash(_('Post saved.'))
+    return redirect_back()
+
+
+@bp.route('/unsave/<int:id>', methods=['POST'])
+@login_required
+def unsave(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        post = db.get_or_404(Post, id)
+        current_user.unsave_post(post)
+        db.session.commit()
+        flash(_('Post removed from saved.'))
+    return redirect_back()
+
+
+@bp.route('/saved')
+@login_required
+def saved():
+    page = request.args.get('page', 1, type=int)
+    posts = db.paginate(current_user.get_saved_posts(), page=page,
+                        per_page=current_app.config['POSTS_PER_PAGE'],
+                        error_out=False)
+    next_url = url_for('main.saved', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('main.saved', page=posts.prev_num) \
+        if posts.has_prev else None
+    return render_template('saved.html', title=_('Saved'),
+                           posts=posts.items, next_url=next_url,
+                           prev_url=prev_url)

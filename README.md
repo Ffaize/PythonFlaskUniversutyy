@@ -94,6 +94,32 @@ http POST http://localhost:5000/api/users username=bob password=dog email=bob@ex
 | 22. Background Jobs | RQ, експорт дописів з прогресом | `app/tasks.py`, `Task` |
 | 23. APIs | REST API, токени, Flask-HTTPAuth | `app/api/` |
 
+## Власний функціонал (понад туторіал)
+
+### 1. Редагування й видалення постів
+- Під своїм постом є кнопки «Edit» і «Delete». Під чужими постами їх немає.
+- `GET/POST /post/<id>/edit` відкриває ту саму `PostForm`, що й на головній. Під час збереження мова допису визначається заново (`langdetect`), а в поле `Post.edited` записується час. Біля відредагованого поста видно позначку «(edited)».
+- `POST /post/<id>/delete` спершу показує `confirm()` у браузері, а потім викликає `Post.delete_with_relations()`. Цей метод видаляє лайки й збереження цього поста, а потім сам пост.
+- Хто не автор поста, той отримує `abort(403)`, тобто сторінку `errors/403.html`. Обробник 403 додано в `app/errors/handlers.py` поруч із 404 і 500.
+
+### 2. Лайки
+- Таблиця `likes (user_id, post_id)` має ту саму будову, що й `followers` з розділу 8, тільки пов'язує користувача з постом, а не з іншим користувачем.
+- `User.like()`, `User.unlike()`, `User.has_liked()`, `Post.likes_count()` повторюють `follow()`, `unfollow()`, `is_following()` і `followers_count()`.
+- `POST /like/<id>` і `POST /unlike/<id>`. Кнопка ♡ або ♥ показує кількість лайків.
+
+### 3. Збережені пости (як в Instagram або TikTok)
+- Таблиця `saved_posts (user_id, post_id, timestamp)`. Поле `timestamp` потрібне, щоб першими йшли останні збережені пости.
+- `User.save_post()`, `User.unsave_post()`, `User.has_saved()` і `User.get_saved_posts()`. Останній метод вибирає лише пости, збережені поточним користувачем.
+- `POST /save/<id>` і `POST /unsave/<id>`. Сторінка `/saved` (пункт «Saved» у меню) працює з пагінацією, як у розділі 9. Список бачить лише його власник, бо запит завжди фільтрується за `current_user`.
+
+### Як це влаштовано
+- Усі кнопки є маленькими POST-формами з CSRF-токеном, як кнопки Follow і Unfollow у розділі 8. Форма `EmptyForm` створюється в `before_request` і кладеться в `g.action_form`, так само як `g.search_form` у розділі 16. Тому шаблон `_post.html` може показувати кнопки на будь-якій сторінці.
+- `redirect_back()` після лайку чи збереження повертає на ту саму сторінку (через `request.referrer`), але тільки якщо адреса належить нашому сайту.
+- `passive_deletes=True` у `Post.liked_by` і `Post.saved_by`. Це write-only зв'язки, і SQLAlchemy не може сам завантажити їх, щоб почистити при видаленні поста. Тому рядки з `likes` і `saved_posts` видаляються вручну в `delete_with_relations()`.
+- Три нові міграції згенеровано через `flask db migrate`: `post edited field`, `likes`, `saved posts`.
+- Нові тести в `tests.py`: `test_like`, `test_saved_posts`, `test_delete_post`.
+- Усі нові тексти перекладено українською (`flask translate update`, `flask translate compile`).
+
 ## Відмінності від туторіалу
 
 - Назва: `microblog.py` перейменовано на `gamelog.py`, `Microblog` на `GameLog`, черга `microblog-tasks` тепер `gamelog-tasks`. Підпис поля форми допису: «What are you playing?» замість «Say something».

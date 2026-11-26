@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from datetime import datetime, timezone, timedelta
 import unittest
+import sqlalchemy as sa
 from app import create_app, db
-from app.models import User, Post
+from app.models import User, Post, likes, saved_posts
 from config import Config
 
 
@@ -100,6 +101,68 @@ class UserModelCase(unittest.TestCase):
         self.assertEqual(f2, [p2, p3])
         self.assertEqual(f3, [p3, p4])
         self.assertEqual(f4, [p4])
+
+    def test_like(self):
+        u1 = User(username='john', email='john@example.com')
+        u2 = User(username='susan', email='susan@example.com')
+        p = Post(body='Hollow Knight is great', author=u2)
+        db.session.add_all([u1, u2, p])
+        db.session.commit()
+        self.assertFalse(u1.has_liked(p))
+        self.assertEqual(p.likes_count(), 0)
+
+        u1.like(p)
+        u1.like(p)  # повторний лайк нічого не змінює
+        db.session.commit()
+        self.assertTrue(u1.has_liked(p))
+        self.assertEqual(p.likes_count(), 1)
+
+        u1.unlike(p)
+        db.session.commit()
+        self.assertFalse(u1.has_liked(p))
+        self.assertEqual(p.likes_count(), 0)
+
+    def test_saved_posts(self):
+        u1 = User(username='john', email='john@example.com')
+        u2 = User(username='susan', email='susan@example.com')
+        p1 = Post(body='first', author=u2)
+        p2 = Post(body='second', author=u2)
+        db.session.add_all([u1, u2, p1, p2])
+        db.session.commit()
+
+        u1.save_post(p1)
+        db.session.commit()
+        u1.save_post(p2)
+        db.session.commit()
+        self.assertTrue(u1.has_saved(p1))
+        self.assertFalse(u2.has_saved(p1))
+        # останній збережений пост іде першим
+        saved = db.session.scalars(u1.get_saved_posts()).all()
+        self.assertEqual(saved, [p2, p1])
+        # список збережених бачить лише сам користувач
+        self.assertEqual(db.session.scalars(u2.get_saved_posts()).all(), [])
+
+        u1.unsave_post(p2)
+        db.session.commit()
+        self.assertEqual(db.session.scalars(u1.get_saved_posts()).all(), [p1])
+
+    def test_delete_post(self):
+        u1 = User(username='john', email='john@example.com')
+        u2 = User(username='susan', email='susan@example.com')
+        p = Post(body='to be deleted', author=u2)
+        db.session.add_all([u1, u2, p])
+        db.session.commit()
+        u1.like(p)
+        u1.save_post(p)
+        db.session.commit()
+
+        p.delete_with_relations()
+        db.session.commit()
+        self.assertEqual(db.session.scalar(sa.select(Post)), None)
+        self.assertEqual(db.session.scalar(
+            sa.select(sa.func.count()).select_from(likes)), 0)
+        self.assertEqual(db.session.scalar(
+            sa.select(sa.func.count()).select_from(saved_posts)), 0)
 
 
 if __name__ == '__main__':

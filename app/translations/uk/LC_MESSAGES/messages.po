@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GameLog 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-15 00:52+0200\n"
+"POT-Creation-Date: 2026-11-26 12:11+0200\n"
 "PO-Revision-Date: 2026-11-15 00:52+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -107,7 +107,7 @@ msgstr "Надіслати"
 msgid "What are you playing?"
 msgstr "У що ви граєте?"
 
-#: app/main/forms.py:40 app/main/routes.py:177
+#: app/main/forms.py:40 app/main/routes.py:187
 msgid "Search"
 msgstr "Пошук"
 
@@ -115,91 +115,139 @@ msgstr "Пошук"
 msgid "Message"
 msgstr "Повідомлення"
 
-#: app/main/routes.py:39
+#: app/main/routes.py:41
 msgid "Your post is now live!"
 msgstr "Ваш допис опубліковано!"
 
-#: app/main/routes.py:49 app/templates/base.html:27
+#: app/main/routes.py:51 app/templates/base.html:27
 msgid "Home"
 msgstr "Головна"
 
-#: app/main/routes.py:66 app/templates/base.html:30
+#: app/main/routes.py:76 app/templates/base.html:30
 msgid "Explore"
 msgstr "Огляд"
 
-#: app/main/routes.py:105
+#: app/main/routes.py:115
 msgid "Your changes have been saved."
 msgstr "Ваші зміни збережено."
 
-#: app/main/routes.py:110 app/templates/edit_profile.html:5
+#: app/main/routes.py:120 app/templates/edit_profile.html:5
 msgid "Edit Profile"
 msgstr "Редагувати профіль"
 
-#: app/main/routes.py:122 app/main/routes.py:143
+#: app/main/routes.py:132 app/main/routes.py:153
 #, python-format
 msgid "User %(username)s not found."
 msgstr "Користувача %(username)s не знайдено."
 
-#: app/main/routes.py:125
+#: app/main/routes.py:135
 msgid "You cannot follow yourself!"
 msgstr "Ви не можете підписатися на себе!"
 
-#: app/main/routes.py:129
+#: app/main/routes.py:139
 #, python-format
 msgid "You are following %(username)s!"
 msgstr "Ви підписалися на %(username)s!"
 
-#: app/main/routes.py:146
+#: app/main/routes.py:156
 msgid "You cannot unfollow yourself!"
 msgstr "Ви не можете відписатися від себе!"
 
-#: app/main/routes.py:150
+#: app/main/routes.py:160
 #, python-format
 msgid "You are not following %(username)s."
 msgstr "Ви більше не підписані на %(username)s."
 
-#: app/main/routes.py:193
+#: app/main/routes.py:203
 msgid "Your message has been sent."
 msgstr "Ваше повідомлення надіслано."
 
-#: app/main/routes.py:195
+#: app/main/routes.py:205
 msgid "Send Message"
 msgstr "Надіслати повідомлення"
 
-#: app/main/routes.py:223
+#: app/main/routes.py:233
 msgid "An export task is currently in progress"
 msgstr "Експорт уже виконується"
 
-#: app/main/routes.py:225
+#: app/main/routes.py:235
 msgid "Exporting posts..."
 msgstr "Експортуємо дописи..."
+
+#: app/main/routes.py:270
+msgid "Your post has been updated."
+msgstr "Ваш допис оновлено."
+
+#: app/main/routes.py:274 app/templates/edit_post.html:5
+msgid "Edit Post"
+msgstr "Редагування допису"
+
+#: app/main/routes.py:287
+msgid "Your post has been deleted."
+msgstr "Ваш допис видалено."
+
+#: app/main/routes.py:321
+msgid "Post saved."
+msgstr "Допис збережено."
+
+#: app/main/routes.py:333
+msgid "Post removed from saved."
+msgstr "Допис прибрано зі збережених."
+
+#: app/main/routes.py:348 app/templates/base.html:34
+msgid "Saved"
+msgstr "Збережене"
 
 #: app/templates/_post.html:14
 #, python-format
 msgid "%(username)s said %(when)s"
 msgstr "%(username)s написав(-ла) %(when)s"
 
-#: app/templates/_post.html:25
+#: app/templates/_post.html:19
+msgid "edited"
+msgstr "змінено"
+
+#: app/templates/_post.html:28
 msgid "Translate"
 msgstr "Перекласти"
+
+#: app/templates/_post.html:46
+msgid "Unsave"
+msgstr "Прибрати зі збережених"
+
+#: app/templates/_post.html:51
+msgid "Save"
+msgstr "Зберегти"
+
+#: app/templates/_post.html:55
+msgid "Edit"
+msgstr "Редагувати"
+
+#: app/templates/_post.html:57
+msgid "Delete this post?"
+msgstr "Видалити цей допис?"
+
+#: app/templates/_post.html:59
+msgid "Delete"
+msgstr "Видалити"
 
 #: app/templates/base.html:9
 msgid "Welcome to GameLog"
 msgstr "Ласкаво просимо до GameLog"
 
-#: app/templates/base.html:43
+#: app/templates/base.html:48
 msgid "Login"
 msgstr "Вхід"
 
-#: app/templates/base.html:47 app/templates/messages.html:4
+#: app/templates/base.html:52 app/templates/messages.html:4
 msgid "Messages"
 msgstr "Повідомлення"
 
-#: app/templates/base.html:57
+#: app/templates/base.html:62
 msgid "Profile"
 msgstr "Профіль"
 
-#: app/templates/base.html:60
+#: app/templates/base.html:65
 msgid "Logout"
 msgstr "Вийти"
 
@@ -208,13 +256,13 @@ msgstr "Вийти"
 msgid "Hi, %(username)s!"
 msgstr "Привіт, %(username)s!"
 
-#: app/templates/index.html:16 app/templates/search.html:12
-#: app/templates/user.html:47
+#: app/templates/index.html:16 app/templates/saved.html:15
+#: app/templates/search.html:12 app/templates/user.html:47
 msgid "Newer posts"
 msgstr "Новіші дописи"
 
-#: app/templates/index.html:21 app/templates/search.html:17
-#: app/templates/user.html:52
+#: app/templates/index.html:21 app/templates/saved.html:20
+#: app/templates/search.html:17 app/templates/user.html:52
 msgid "Older posts"
 msgstr "Старіші дописи"
 
@@ -225,6 +273,18 @@ msgstr "Новіші повідомлення"
 #: app/templates/messages.html:17
 msgid "Older messages"
 msgstr "Старіші повідомлення"
+
+#: app/templates/saved.html:4
+msgid "Saved posts"
+msgstr "Збережені дописи"
+
+#: app/templates/saved.html:5
+msgid "Only you can see this list."
+msgstr "Цей список бачите лише ви."
+
+#: app/templates/saved.html:9
+msgid "You have not saved any posts yet."
+msgstr "Ви ще не зберегли жодного допису."
 
 #: app/templates/search.html:4
 msgid "Search Results"
@@ -293,13 +353,22 @@ msgstr "Скиньте його"
 msgid "Reset Your Password"
 msgstr "Скидання пароля"
 
+#: app/templates/errors/403.html:4
+msgid "Forbidden"
+msgstr "Доступ заборонено"
+
+#: app/templates/errors/403.html:5
+msgid "You do not have permission to do this."
+msgstr "У вас немає прав на цю дію."
+
+#: app/templates/errors/403.html:6 app/templates/errors/404.html:5
+#: app/templates/errors/500.html:6
+msgid "Back"
+msgstr "Назад"
+
 #: app/templates/errors/404.html:4
 msgid "Not Found"
 msgstr "Не знайдено"
-
-#: app/templates/errors/404.html:5 app/templates/errors/500.html:6
-msgid "Back"
-msgstr "Назад"
 
 #: app/templates/errors/500.html:4
 msgid "An unexpected error has occurred"

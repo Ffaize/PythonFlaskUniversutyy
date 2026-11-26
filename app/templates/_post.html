@@ -15,6 +15,9 @@
                     username=user_link, when=moment(post.timestamp).fromNow()) }}
                 <br>
                 <span id="post{{ post.id }}">{{ post.body }}</span>
+                {% if post.edited %}
+                <small class="text-muted">({{ _('edited') }})</small>
+                {% endif %}
                 {% if post.language and post.language != g.locale %}
                 <br><br>
                 <span id="translation{{ post.id }}">
@@ -25,6 +28,38 @@
                                 '{{ g.locale }}');">{{ _('Translate') }}</a>
                 </span>
                 {% endif %}
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    {% if current_user.has_liked(post) %}
+                    <form action="{{ url_for('main.unlike', id=post.id) }}" method="post">
+                        {{ g.action_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-sm btn-danger">&#9829; {{ post.likes_count() }}</button>
+                    </form>
+                    {% else %}
+                    <form action="{{ url_for('main.like', id=post.id) }}" method="post">
+                        {{ g.action_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">&#9825; {{ post.likes_count() }}</button>
+                    </form>
+                    {% endif %}
+                    {% if current_user.has_saved(post) %}
+                    <form action="{{ url_for('main.unsave', id=post.id) }}" method="post">
+                        {{ g.action_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-sm btn-secondary">{{ _('Unsave') }}</button>
+                    </form>
+                    {% else %}
+                    <form action="{{ url_for('main.save', id=post.id) }}" method="post">
+                        {{ g.action_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">{{ _('Save') }}</button>
+                    </form>
+                    {% endif %}
+                    {% if post.author == current_user %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ url_for('main.edit_post', id=post.id) }}">{{ _('Edit') }}</a>
+                    <form action="{{ url_for('main.delete_post', id=post.id) }}" method="post"
+                          onsubmit='return confirm({{ _("Delete this post?")|tojson }});'>
+                        {{ g.action_form.hidden_tag() }}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Delete') }}</button>
+                    </form>
+                    {% endif %}
+                </div>
             </td>
         </tr>
     </table>
