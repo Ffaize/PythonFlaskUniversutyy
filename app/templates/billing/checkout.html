@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% import "bootstrap_wtf.html" as wtf %}
+
+{% block content %}
+    <h1>{{ _('Checkout') }}</h1>
+    <p class="lead">GameLog Pro: {{ plan.name }}, {{ plan.price }} ₴</p>
+    <div class="alert alert-info">
+        <p>{{ _('Test mode: no real money is charged. Use one of these test cards:') }}</p>
+        <ul class="mb-0">
+            <li><code>6767 6767 6767 6767</code>: {{ _('successful payment') }}</li>
+            <li><code>4000 0000 0000 0002</code>: {{ _('card declined') }}</li>
+            <li><code>4000 0000 0000 9995</code>: {{ _('insufficient funds') }}</li>
+        </ul>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            {{ wtf.quick_form(form) }}
+        </div>
+    </div>
+{% endblock %}

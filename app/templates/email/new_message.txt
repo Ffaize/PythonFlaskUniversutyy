@@ -1,0 +1,13 @@
+Dear {{ user.username }},
+
+{{ sender_name }} sent you a private message:
+
+"{{ message }}"
+
+Read it here: {{ link }}
+
+You can turn off these emails in your profile settings.
+
+Sincerely,
+
+The GameLog Team

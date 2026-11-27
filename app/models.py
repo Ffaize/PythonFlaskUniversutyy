@@ -16,6 +16,13 @@ from app import db, login
 from app.search import add_to_index, remove_from_index, query_index
 
 
+def as_utc(dt):
+    # SQLite повертає дати без часового поясу, а ми зберігаємо їх в UTC
+    if dt is not None and dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
 class SearchableMixin:
     @classmethod
     def search(cls, expression, page, per_page):
@@ -128,6 +135,9 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
         default=lambda: datetime.now(timezone.utc))
     last_message_read_time: so.Mapped[Optional[datetime]]
+    pro_until: so.Mapped[Optional[datetime]]
+    email_notifications: so.Mapped[bool] = so.mapped_column(
+        default=True, server_default=sa.true())
     token: so.Mapped[Optional[str]] = so.mapped_column(
         sa.String(32), index=True, unique=True)
     token_expiration: so.Mapped[Optional[datetime]]
@@ -149,6 +159,10 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
     notifications: so.WriteOnlyMapped['Notification'] = so.relationship(
         back_populates='user')
     tasks: so.WriteOnlyMapped['Task'] = so.relationship(back_populates='user')
+    scheduled_posts: so.WriteOnlyMapped['ScheduledPost'] = so.relationship(
+        back_populates='author')
+    payments: so.WriteOnlyMapped['Payment'] = so.relationship(
+        back_populates='user')
     liked_posts: so.WriteOnlyMapped['Post'] = so.relationship(
         secondary=likes, back_populates='liked_by')
     saved: so.WriteOnlyMapped['Post'] = so.relationship(
@@ -235,6 +249,25 @@ class User(PaginatedAPIMixin, UserMixin, db.Model):
             .where(saved_posts.c.user_id == self.id)
             .order_by(saved_posts.c.timestamp.desc())
         )
+
+    def is_pro(self):
+        return self.pro_until is not None and \
+            as_utc(self.pro_until) > datetime.now(timezone.utc)
+
+    def extend_pro(self, duration):
+        # якщо підписка ще діє, новий період додається в кінець поточного
+        start = datetime.now(timezone.utc)
+        if self.is_pro():
+            start = as_utc(self.pro_until)
+        self.pro_until = start + duration
+        return self.pro_until
+
+    def get_scheduled_posts(self):
+        return self.scheduled_posts.select().order_by(
+            ScheduledPost.publish_at.asc())
+
+    def get_payments(self):
+        return self.payments.select().order_by(Payment.timestamp.desc())
 
     def get_reset_password_token(self, expires_in=600):
         return jwt.encode(
@@ -372,6 +405,55 @@ class Post(SearchableMixin, db.Model):
         db.session.execute(
             saved_posts.delete().where(saved_posts.c.post_id == self.id))
         db.session.delete(self)
+
+
+class ScheduledPost(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    body: so.Mapped[str] = so.mapped_column(sa.String(140))
+    language: so.Mapped[Optional[str]] = so.mapped_column(sa.String(5))
+    publish_at: so.Mapped[datetime] = so.mapped_column(index=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
+                                               index=True)
+    job_id: so.Mapped[Optional[str]] = so.mapped_column(sa.String(36))
+
+    author: so.Mapped[User] = so.relationship(back_populates='scheduled_posts')
+
+    def __repr__(self):
+        return '<ScheduledPost {}>'.format(self.body)
+
+    def publish(self):
+        # перетворює відкладений пост на звичайний і видаляє себе
+        post = Post(body=self.body, language=self.language, author=self.author)
+        db.session.add(post)
+        db.session.delete(self)
+        return post
+
+    def get_rq_job(self):
+        if self.job_id is None:
+            return None
+        try:
+            return rq.job.Job.fetch(self.job_id, connection=current_app.redis)
+        except (redis.exceptions.RedisError, rq.exceptions.NoSuchJobError):
+            return None
+
+
+class Payment(db.Model):
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    user_id: so.Mapped[int] = so.mapped_column(sa.ForeignKey(User.id),
+                                               index=True)
+    plan: so.Mapped[str] = so.mapped_column(sa.String(16))
+    amount: so.Mapped[int]
+    card_last4: so.Mapped[str] = so.mapped_column(sa.String(4))
+    status: so.Mapped[str] = so.mapped_column(sa.String(16), default='pending')
+    error: so.Mapped[Optional[str]] = so.mapped_column(sa.String(128))
+    transaction_id: so.Mapped[Optional[str]] = so.mapped_column(sa.String(32))
+    timestamp: so.Mapped[datetime] = so.mapped_column(
+        index=True, default=lambda: datetime.now(timezone.utc))
+
+    user: so.Mapped[User] = so.relationship(back_populates='payments')
+
+    def __repr__(self):
+        return '<Payment {} {} {}>'.format(self.id, self.plan, self.status)
 
 
 class Message(db.Model):

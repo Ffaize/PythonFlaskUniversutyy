@@ -1,0 +1,54 @@
+# Уся система GameLog однією командою:  docker compose up --build
+#   сайт:                 http://localhost:8000
+#   листи (Mailpit):      http://localhost:8025
+x-gamelog-env: &gamelog-env
+  SECRET_KEY: change-me-in-production
+  DATABASE_URL: mysql+pymysql://gamelog:gamelog-password@mysql/gamelog
+  REDIS_URL: redis://redis:6379/0
+  MAIL_SERVER: mailpit
+  MAIL_PORT: 1025
+  LOG_TO_STDOUT: 1
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      MYSQL_DATABASE: gamelog
+      MYSQL_USER: gamelog
+      MYSQL_PASSWORD: gamelog-password
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+
+  web:
+    build: .
+    image: gamelog:latest
+    ports:
+      - "8000:5000"
+    environment: *gamelog-env
+    depends_on:
+      - mysql
+      - redis
+      - mailpit
+
+  worker:
+    build: .
+    image: gamelog:latest
+    # воркер RQ з планувальником: виконує задачі з черги і запускає
+    # відкладені (відкладені пости, кінець підписки) у потрібний час
+    entrypoint: rq
+    command: worker -u redis://redis:6379/0 --with-scheduler gamelog-tasks
+    environment: *gamelog-env
+    depends_on:
+      - web
+
+volumes:
+  mysql-data:

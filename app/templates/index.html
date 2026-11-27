@@ -4,7 +4,15 @@
 {% block content %}
     <h1>{{ _('Hi, %(username)s!', username=current_user.username) }}</h1>
     {% if form %}
-    {{ wtf.quick_form(form) }}
+    {{ wtf.quick_form(form, id='post-form') }}
+    <script>
+      // передаємо серверу зсув часового поясу браузера для вибраної дати
+      document.getElementById('post-form').addEventListener('submit', () => {
+        const publishAt = document.getElementById('publish_at').value;
+        const date = publishAt ? new Date(publishAt) : new Date();
+        document.getElementById('tz_offset').value = date.getTimezoneOffset();
+      });
+    </script>
     {% endif %}
     {% for post in posts %}
         {% include '_post.html' %}

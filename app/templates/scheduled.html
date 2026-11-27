@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ _('Scheduled posts') }}</h1>
+    {% if not current_user.is_pro() %}
+    <div class="alert alert-warning">
+        {{ _('Scheduled posts are available with GameLog Pro.') }}
+        <a href="{{ url_for('billing.subscription') }}">{{ _('Get GameLog Pro') }}</a>
+    </div>
+    {% endif %}
+    {% for post in posts %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <p class="card-text">{{ post.body }}</p>
+            <p class="card-text text-muted">
+                {{ _('Will be published') }}: {{ moment(post.publish_at).format('LLL') }}
+                ({{ moment(post.publish_at).fromNow() }})
+            </p>
+            <form action="{{ url_for('main.cancel_scheduled', id=post.id) }}" method="post">
+                {{ g.action_form.hidden_tag() }}
+                <button type="submit" class="btn btn-sm btn-outline-danger">{{ _('Cancel') }}</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <p>{{ _('You have no scheduled posts.') }}</p>
+    {% endfor %}
+{% endblock %}

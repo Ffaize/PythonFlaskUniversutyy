@@ -1,0 +1,9 @@
+Dear {{ user.username }},
+
+Your GameLog Pro subscription has expired. Scheduled posts and the PRO badge are no longer available.
+
+You can renew it at any time on the Pro page.
+
+Sincerely,
+
+The GameLog Team

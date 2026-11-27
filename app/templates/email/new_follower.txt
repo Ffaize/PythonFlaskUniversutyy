@@ -1,0 +1,11 @@
+Dear {{ user.username }},
+
+{{ follower }} is now following you on GameLog.
+
+See their profile: {{ link }}
+
+You can turn off these emails in your profile settings.
+
+Sincerely,
+
+The GameLog Team

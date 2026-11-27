@@ -4,7 +4,29 @@ GameLog — мікроблог для геймерів: короткі допи�
 
 Проєкт зроблено за [The Flask Mega-Tutorial (2024 Edition)](https://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world) Мігеля Грінберга, розділи 1–23. Структура, моделі, міграції, blueprints, шаблони і команди такі самі, як у туторіалі. Змінено тільки тему (назву, тексти, назву черги RQ) і мову перекладу: українська замість іспанської.
 
-## Швидкий старт (Windows, PowerShell)
+## Запуск усієї системи через Docker (з чергою)
+
+Потрібен Docker Desktop. У папці проєкту:
+
+```powershell
+docker compose up --build
+```
+
+- сайт: http://localhost:8000
+- листи (Mailpit): http://localhost:8025
+- зупинити: `Ctrl+C`, потім `docker compose down` (дані MySQL зберігаються у volume)
+
+`docker-compose.yml` піднімає п'ять контейнерів:
+
+| Сервіс | Що робить |
+|---|---|
+| `mysql` | база даних (як у розділі 19) |
+| `redis` | сервер черги |
+| `web` | сайт: gunicorn, `boot.sh` спершу виконує `flask db upgrade` |
+| `worker` | `rq worker --with-scheduler gamelog-tasks`: виконує задачі з черги, а відкладені запускає в потрібний час |
+| `mailpit` | тестовий SMTP-сервер, усі листи видно у браузері |
+
+## Швидкий старт без Docker (Windows, PowerShell)
 
 ```powershell
 python -m venv venv
@@ -15,7 +37,7 @@ flask translate compile
 flask run
 ```
 
-Сайт: http://localhost:5000. Змінні `FLASK_APP=gamelog.py` і `FLASK_DEBUG=1` вже записані у `.flaskenv`.
+Сайт: http://localhost:5000. Змінні `FLASK_APP=gamelog.py` і `FLASK_DEBUG=1` вже записані у `.flaskenv`. Без Redis і воркера сайт працює, але оплата й відкладені пости показують повідомлення «черга недоступна», а листи-сповіщення не надсилаються.
 
 Тести: `python tests.py`
 
@@ -117,11 +139,60 @@ http POST http://localhost:5000/api/users username=bob password=dog email=bob@ex
 - `redirect_back()` після лайку чи збереження повертає на ту саму сторінку (через `request.referrer`), але тільки якщо адреса належить нашому сайту.
 - `passive_deletes=True` у `Post.liked_by` і `Post.saved_by`. Це write-only зв'язки, і SQLAlchemy не може сам завантажити їх, щоб почистити при видаленні поста. Тому рядки з `likes` і `saved_posts` видаляються вручну в `delete_with_relations()`.
 - Три нові міграції згенеровано через `flask db migrate`: `post edited field`, `likes`, `saved posts`.
-- Нові тести в `tests.py`: `test_like`, `test_saved_posts`, `test_delete_post`.
+- Нові тести в `tests.py`: `test_like`, `test_saved_posts`, `test_delete_post`, `test_pro_subscription`, `test_scheduled_post_publish`, `test_payments`.
 - Усі нові тексти перекладено українською (`flask translate update`, `flask translate compile`).
+
+## Функціонал з чергою (Redis + RQ)
+
+Усі три функції працюють через ту саму чергу `gamelog-tasks`, що й експорт постів з розділу 22. Веб-запит лише кладе задачу в Redis і одразу повертає сторінку, а виконує задачу окремий процес `rq worker`.
+
+```
+браузер ─▶ Flask (routes.py) ─▶ Redis (черга gamelog-tasks) ─▶ rq worker (app/tasks.py) ─▶ БД / пошта
+                 │  enqueue() — виконати зараз
+                 └─ enqueue_at() — виконати в заданий час (потрібен --with-scheduler)
+```
+
+### 4. Відкладені пости (`enqueue_at`)
+- Під полем поста є «Publish later (GameLog Pro)». Браузер надсилає місцевий час, а JavaScript додає `tz_offset` (зсув поясу в хвилинах). Сервер переводить час в UTC.
+- `schedule_post()` у `app/main/routes.py` створює `ScheduledPost` і ставить задачу `task_queue.enqueue_at(publish_at, 'app.tasks.publish_scheduled_post', id)`. Id задачі RQ зберігається в `ScheduledPost.job_id`.
+- У потрібний час планувальник RQ запускає `publish_scheduled_post()`. Вона викликає `ScheduledPost.publish()`: та створює звичайний `Post` і видаляє `ScheduledPost`.
+- Сторінка `/scheduled` показує заплановані пости. Кнопка «Cancel» видаляє задачу з розкладу (`job.delete()`) і сам запис. Якщо задача все ж запуститься, вона не знайде запису й нічого не опублікує.
+- Доступно лише з GameLog Pro.
+
+### 5. Email-сповіщення через чергу (`enqueue`)
+- Новий підписник, лайк на твій пост і особисте повідомлення: `queue_notification_email()` в `app/email.py` кладе в чергу задачу `send_notification_email`, а лист відправляє воркер. Сторінка не чекає на SMTP-сервер.
+- У профілі є галочка «Email me about new followers, likes and messages» (`User.email_notifications`).
+- Якщо Redis недоступний, лайк чи підписка все одно спрацює, а в лог піде попередження (`except redis.exceptions.RedisError`).
+- Посилання в листах формуються в запиті (`url_for(..., _external=True)`), бо у воркера немає HTTP-запиту, з якого можна взяти адресу сайту.
+
+### 6. Підписка GameLog Pro з мок-оплатою
+- Сторінка `/billing` (blueprint `app/billing/`): статус підписки, плани (демо на 2 хвилини, місяць, рік) та історія платежів.
+- `/billing/checkout/<plan>` — форма картки (`CheckoutForm`) з перевіркою формату, терміну дії та алгоритмом Луна.
+- `app/payments.py` — мок платіжного шлюзу, схожий на тестовий режим Stripe:
+  - `tokenize()` перетворює номер картки на токен уже у веб-запиті. У базу потрапляють лише останні 4 цифри, а в чергу — лише токен.
+  - `charge()` триває 3 секунди і за тестовою карткою вирішує результат: `6767 6767 6767 6767` — успіх, `4000 0000 0000 0002` — відмова, `4000 0000 0000 9995` — недостатньо коштів.
+- Оплата запускається через `current_user.launch_task('process_payment', ...)`, як експорт у розділі 22. Тому вгорі сторінки видно прогрес «Processing payment... 30%».
+- `process_payment()` у воркері:
+  1. Списує кошти.
+  2. Змінює `Payment.status` на `succeeded` або `failed`.
+  3. Продовжує `User.pro_until`: якщо підписка ще діє, новий період додається в кінець поточного.
+  4. Надсилає квитанцію або лист про відмову.
+  5. Ставить у розклад `subscription_expired()` на момент закінчення Pro, плюс 1 секунда, бо планувальник RQ округлює час до секунд.
+- `subscription_expired()` надсилає лист «підписка закінчилась», якщо її за цей час не продовжили.
+- Pro дає відкладені пости і значок PRO біля імені в постах і профілі (`User.is_pro()`).
+
+### Як показати на захисті
+1. Запусти `docker compose up --build` і зареєструй двох користувачів.
+2. Підпишись одним користувачем на іншого, постав лайк, напиши повідомлення. Листи з'являться в Mailpit (http://localhost:8025).
+3. Купи «Demo (2 minutes)» карткою `4000 0000 0000 0002`. У «Payment history» буде відмова, у Mailpit — лист про невдалий платіж.
+4. Купи ще раз карткою `6767 6767 6767 6767`. Видно прогрес оплати, після оновлення сторінки з'явиться значок PRO, у Mailpit прийде квитанція.
+5. Заплануй пост на 1–2 хвилини вперед, і він сам з'явиться в стрічці. Другий заплануй і скасуй.
+6. Через 2 хвилини після оплати в Mailpit прийде лист про кінець підписки, а значок PRO зникне.
+7. Лог воркера: `docker compose logs -f worker`.
 
 ## Відмінності від туторіалу
 
 - Назва: `microblog.py` перейменовано на `gamelog.py`, `Microblog` на `GameLog`, черга `microblog-tasks` тепер `gamelog-tasks`. Підпис поля форми допису: «What are you playing?» замість «Say something».
 - Мова перекладу українська (`uk`), а не іспанська (`es`).
+- `Dockerfile` використовує `python:3.14-slim` замість `python:slim`, щоб версія Python у контейнері збігалася з твоєю. Додано `docker-compose.yml` і `.gitattributes`, щоб `boot.sh` завжди мав LF-кінці рядків.
 - Версії пакетів у `requirements.txt` новіші, ніж у туторіалі (2023 рік): старі пакети не встановлюються на Python 3.14. `rq` закріплено на 1.x, бо код туторіалу викликає `job.get_id()`, а в RQ 2.x цього методу вже немає. `elasticsearch` закріплено на 8.x під сервер Elasticsearch 8.

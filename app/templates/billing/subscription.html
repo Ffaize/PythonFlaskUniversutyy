@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>GameLog Pro</h1>
+    <div class="alert alert-info">
+        {{ _('Test mode: no real money is charged. Use the test cards shown on the checkout page.') }}
+    </div>
+    {% if current_user.is_pro() %}
+    <p class="lead">
+        <span class="badge text-bg-warning">PRO</span>
+        {{ _('Your subscription is active until') }} {{ moment(current_user.pro_until).format('LLL') }}.
+    </p>
+    {% else %}
+    <p class="lead">{{ _('You do not have an active subscription.') }}</p>
+    {% endif %}
+    <p>{{ _('GameLog Pro gives you scheduled posts and a PRO badge next to your name.') }}</p>
+
+    <div class="row mb-4">
+        {% for key, plan in plans.items() %}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ plan.name }}</h5>
+                    <p class="card-text fs-4">{{ plan.price }} ₴</p>
+                    <a class="btn btn-primary" href="{{ url_for('billing.checkout', plan=key) }}">
+                        {% if current_user.is_pro() %}{{ _('Extend') }}{% else %}{{ _('Buy') }}{% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h2>{{ _('Payment history') }}</h2>
+    {% if payments %}
+    <table class="table">
+        <tr>
+            <th>{{ _('Date') }}</th>
+            <th>{{ _('Plan') }}</th>
+            <th>{{ _('Amount') }}</th>
+            <th>{{ _('Card') }}</th>
+            <th>{{ _('Status') }}</th>
+        </tr>
+        {% for payment in payments %}
+        <tr>
+            <td>{{ moment(payment.timestamp).format('LLL') }}</td>
+            <td>{{ plans[payment.plan].name }}</td>
+            <td>{{ payment.amount }} ₴</td>
+            <td>•••• {{ payment.card_last4 }}</td>
+            <td>
+                {% if payment.status == 'succeeded' %}
+                <span class="badge text-bg-success">{{ _('Paid') }}</span>
+                {% elif payment.status == 'failed' %}
+                <span class="badge text-bg-danger">{{ _('Failed') }}</span>
+                <small class="text-muted">{{ payment.error }}</small>
+                {% else %}
+                <span class="badge text-bg-secondary">{{ _('Processing') }}</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>{{ _('No payments yet.') }}</p>
+    {% endif %}
+{% endblock %}

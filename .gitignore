@@ -42,3 +42,4 @@ gamelog.log*
 # Local environment
 .env
 logs
+dump.rdb

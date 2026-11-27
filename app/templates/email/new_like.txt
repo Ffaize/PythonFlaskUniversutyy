@@ -1,0 +1,13 @@
+Dear {{ user.username }},
+
+{{ liker }} liked your post:
+
+"{{ post_body }}"
+
+{{ link }}
+
+You can turn off these emails in your profile settings.
+
+Sincerely,
+
+The GameLog Team

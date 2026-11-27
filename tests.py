@@ -3,7 +3,8 @@ from datetime import datetime, timezone, timedelta
 import unittest
 import sqlalchemy as sa
 from app import create_app, db
-from app.models import User, Post, likes, saved_posts
+from app.models import User, Post, ScheduledPost, likes, saved_posts
+from app import payments
 from config import Config
 
 
@@ -163,6 +164,47 @@ class UserModelCase(unittest.TestCase):
             sa.select(sa.func.count()).select_from(likes)), 0)
         self.assertEqual(db.session.scalar(
             sa.select(sa.func.count()).select_from(saved_posts)), 0)
+
+    def test_pro_subscription(self):
+        u = User(username='john', email='john@example.com')
+        db.session.add(u)
+        db.session.commit()
+        self.assertFalse(u.is_pro())
+
+        first_end = u.extend_pro(timedelta(days=30))
+        db.session.commit()
+        self.assertTrue(u.is_pro())
+        # продовження додається до кінця поточної підписки
+        second_end = u.extend_pro(timedelta(days=30))
+        self.assertEqual(second_end - first_end, timedelta(days=30))
+
+        u.pro_until = datetime.now(timezone.utc) - timedelta(minutes=1)
+        self.assertFalse(u.is_pro())
+
+    def test_scheduled_post_publish(self):
+        u = User(username='john', email='john@example.com')
+        sp = ScheduledPost(body='Silksong day!', language='en', author=u,
+                           publish_at=datetime.now(timezone.utc))
+        db.session.add_all([u, sp])
+        db.session.commit()
+
+        post = sp.publish()
+        db.session.commit()
+        self.assertEqual(post.body, 'Silksong day!')
+        self.assertEqual(post.author, u)
+        self.assertEqual(db.session.scalar(sa.select(ScheduledPost)), None)
+
+    def test_payments(self):
+        self.assertTrue(payments.luhn_valid('6767676767676767'))
+        self.assertFalse(payments.luhn_valid('6767676767676766'))
+        self.assertEqual(payments.tokenize('6767 6767 6767 6767'),
+                         'tok_success')
+        self.assertEqual(payments.tokenize('4000 0000 0000 0002'),
+                         'tok_card_declined')
+        payments.PROCESSING_TIME = 0
+        self.assertTrue(payments.charge('tok_success', 99).startswith('txn_'))
+        with self.assertRaises(payments.PaymentError):
+            payments.charge('tok_card_declined', 99)
 
 
 if __name__ == '__main__':

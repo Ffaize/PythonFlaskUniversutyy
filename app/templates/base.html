@@ -33,6 +33,12 @@
             <li class="nav-item">
               <a class="nav-link" aria-current="page" href="{{ url_for('main.saved') }}">{{ _('Saved') }}</a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="{{ url_for('main.scheduled') }}">{{ _('Scheduled') }}</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" aria-current="page" href="{{ url_for('billing.subscription') }}">{{ _('Pro') }}</a>
+            </li>
             {% endif %}
             {% if g.search_form %}
             <form class="navbar-form navbar-left" method="get" action="{{ url_for('main.search') }}">

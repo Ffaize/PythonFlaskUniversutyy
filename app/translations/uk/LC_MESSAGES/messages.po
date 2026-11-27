@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: GameLog 1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-26 12:11+0200\n"
+"POT-Creation-Date: 2026-11-26 15:02+0200\n"
 "PO-Revision-Date: 2026-11-15 00:52+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: uk\n"
@@ -23,6 +23,18 @@ msgstr ""
 msgid "Please log in to access this page."
 msgstr "Будь ласка, увійдіть, щоб відкрити цю сторінку."
 
+#: app/payments.py:15
+msgid "Demo (2 minutes)"
+msgstr "Демо (2 хвилини)"
+
+#: app/payments.py:17
+msgid "1 month"
+msgstr "1 місяць"
+
+#: app/payments.py:19
+msgid "1 year"
+msgstr "1 рік"
+
 #: app/translate.py:9
 msgid "Error: the translation service is not configured."
 msgstr "Помилка: сервіс перекладу не налаштовано."
@@ -35,7 +47,7 @@ msgstr "Помилка: збій сервісу перекладу."
 msgid "[GameLog] Reset Your Password"
 msgstr "[GameLog] Скидання пароля"
 
-#: app/auth/forms.py:11 app/auth/forms.py:18 app/main/forms.py:12
+#: app/auth/forms.py:11 app/auth/forms.py:18 app/main/forms.py:14
 msgid "Username"
 msgstr "Ім'я користувача"
 
@@ -63,7 +75,7 @@ msgstr "Повторіть пароль"
 msgid "Register"
 msgstr "Зареєструватися"
 
-#: app/auth/forms.py:30 app/main/forms.py:26
+#: app/auth/forms.py:30 app/main/forms.py:30
 msgid "Please use a different username."
 msgstr "Будь ласка, оберіть інше ім'я користувача."
 
@@ -95,139 +107,220 @@ msgstr "Скинути пароль"
 msgid "Your password has been reset."
 msgstr "Ваш пароль скинуто."
 
-#: app/main/forms.py:13
+#: app/billing/forms.py:10
+msgid "Card number"
+msgstr "Номер картки"
+
+#: app/billing/forms.py:13
+msgid "Expiry date (MM/YY)"
+msgstr "Термін дії (ММ/РР)"
+
+#: app/billing/forms.py:15
+msgid "Use the MM/YY format."
+msgstr "Використовуйте формат ММ/РР."
+
+#: app/billing/forms.py:18
+msgid "Enter 3 digits."
+msgstr "Введіть 3 цифри."
+
+#: app/billing/forms.py:20
+msgid "Pay"
+msgstr "Оплатити"
+
+#: app/billing/forms.py:25
+msgid "Invalid card number."
+msgstr "Неправильний номер картки."
+
+#: app/billing/forms.py:31
+msgid "This card has expired."
+msgstr "Термін дії картки закінчився."
+
+#: app/billing/routes.py:16
+msgid "GameLog Pro"
+msgstr "GameLog Pro"
+
+#: app/billing/routes.py:28
+msgid "A payment is already being processed."
+msgstr "Платіж уже обробляється."
+
+#: app/billing/routes.py:40
+msgid "Processing payment..."
+msgstr "Обробляємо платіж..."
+
+#: app/billing/routes.py:46 app/main/routes.py:81
+msgid "The task queue is not available, please try again later."
+msgstr "Черга задач недоступна, спробуйте пізніше."
+
+#: app/billing/routes.py:50
+msgid "Your payment is being processed."
+msgstr "Ваш платіж обробляється."
+
+#: app/billing/routes.py:52 app/templates/billing/checkout.html:5
+msgid "Checkout"
+msgstr "Оплата"
+
+#: app/main/forms.py:15
 msgid "About me"
 msgstr "Про мене"
 
-#: app/main/forms.py:15 app/main/forms.py:36 app/main/forms.py:53
+#: app/main/forms.py:18
+msgid "Email me about new followers, likes and messages"
+msgstr "Надсилати мені листи про нових підписників, лайки й повідомлення"
+
+#: app/main/forms.py:19 app/main/forms.py:46 app/main/forms.py:52
+#: app/main/forms.py:69
 msgid "Submit"
 msgstr "Надіслати"
 
-#: app/main/forms.py:34
+#: app/main/forms.py:38 app/main/forms.py:50
 msgid "What are you playing?"
 msgstr "У що ви граєте?"
 
-#: app/main/forms.py:40 app/main/routes.py:187
+#: app/main/forms.py:40
+msgid "Publish later (GameLog Pro)"
+msgstr "Опублікувати пізніше (GameLog Pro)"
+
+#: app/main/forms.py:56 app/main/routes.py:229
 msgid "Search"
 msgstr "Пошук"
 
-#: app/main/forms.py:51
+#: app/main/forms.py:67
 msgid "Message"
 msgstr "Повідомлення"
 
-#: app/main/routes.py:41
+#: app/main/routes.py:45
 msgid "Your post is now live!"
 msgstr "Ваш допис опубліковано!"
 
-#: app/main/routes.py:51 app/templates/base.html:27
+#: app/main/routes.py:55 app/templates/base.html:27
 msgid "Home"
 msgstr "Головна"
 
-#: app/main/routes.py:76 app/templates/base.html:30
+#: app/main/routes.py:62 app/templates/scheduled.html:7
+msgid "Scheduled posts are available with GameLog Pro."
+msgstr "Відкладені дописи доступні з GameLog Pro."
+
+#: app/main/routes.py:69
+msgid "The publication time must be in the future."
+msgstr "Час публікації має бути в майбутньому."
+
+#: app/main/routes.py:85
+msgid "Your post has been scheduled."
+msgstr "Ваш допис заплановано."
+
+#: app/main/routes.py:109 app/templates/base.html:30
 msgid "Explore"
 msgstr "Огляд"
 
-#: app/main/routes.py:115
+#: app/main/routes.py:149
 msgid "Your changes have been saved."
 msgstr "Ваші зміни збережено."
 
-#: app/main/routes.py:120 app/templates/edit_profile.html:5
+#: app/main/routes.py:155 app/templates/edit_profile.html:5
 msgid "Edit Profile"
 msgstr "Редагувати профіль"
 
-#: app/main/routes.py:132 app/main/routes.py:153
+#: app/main/routes.py:167 app/main/routes.py:195
 #, python-format
 msgid "User %(username)s not found."
 msgstr "Користувача %(username)s не знайдено."
 
-#: app/main/routes.py:135
+#: app/main/routes.py:170
 msgid "You cannot follow yourself!"
 msgstr "Ви не можете підписатися на себе!"
 
-#: app/main/routes.py:139
+#: app/main/routes.py:181
 #, python-format
 msgid "You are following %(username)s!"
 msgstr "Ви підписалися на %(username)s!"
 
-#: app/main/routes.py:156
+#: app/main/routes.py:198
 msgid "You cannot unfollow yourself!"
 msgstr "Ви не можете відписатися від себе!"
 
-#: app/main/routes.py:160
+#: app/main/routes.py:202
 #, python-format
 msgid "You are not following %(username)s."
 msgstr "Ви більше не підписані на %(username)s."
 
-#: app/main/routes.py:203
+#: app/main/routes.py:249
 msgid "Your message has been sent."
 msgstr "Ваше повідомлення надіслано."
 
-#: app/main/routes.py:205
+#: app/main/routes.py:251
 msgid "Send Message"
 msgstr "Надіслати повідомлення"
 
-#: app/main/routes.py:233
+#: app/main/routes.py:279
 msgid "An export task is currently in progress"
 msgstr "Експорт уже виконується"
 
-#: app/main/routes.py:235
+#: app/main/routes.py:281
 msgid "Exporting posts..."
 msgstr "Експортуємо дописи..."
 
-#: app/main/routes.py:270
+#: app/main/routes.py:316
 msgid "Your post has been updated."
 msgstr "Ваш допис оновлено."
 
-#: app/main/routes.py:274 app/templates/edit_post.html:5
+#: app/main/routes.py:320 app/templates/edit_post.html:5
 msgid "Edit Post"
 msgstr "Редагування допису"
 
-#: app/main/routes.py:287
+#: app/main/routes.py:333
 msgid "Your post has been deleted."
 msgstr "Ваш допис видалено."
 
-#: app/main/routes.py:321
+#: app/main/routes.py:374
 msgid "Post saved."
 msgstr "Допис збережено."
 
-#: app/main/routes.py:333
+#: app/main/routes.py:386
 msgid "Post removed from saved."
 msgstr "Допис прибрано зі збережених."
 
-#: app/main/routes.py:348 app/templates/base.html:34
+#: app/main/routes.py:401 app/templates/base.html:34
 msgid "Saved"
 msgstr "Збережене"
 
-#: app/templates/_post.html:14
+#: app/main/routes.py:410 app/templates/scheduled.html:4
+msgid "Scheduled posts"
+msgstr "Відкладені дописи"
+
+#: app/main/routes.py:427
+msgid "The scheduled post has been cancelled."
+msgstr "Відкладений допис скасовано."
+
+#: app/templates/_post.html:15
 #, python-format
 msgid "%(username)s said %(when)s"
 msgstr "%(username)s написав(-ла) %(when)s"
 
-#: app/templates/_post.html:19
+#: app/templates/_post.html:20
 msgid "edited"
 msgstr "змінено"
 
-#: app/templates/_post.html:28
+#: app/templates/_post.html:29
 msgid "Translate"
 msgstr "Перекласти"
 
-#: app/templates/_post.html:46
+#: app/templates/_post.html:47
 msgid "Unsave"
 msgstr "Прибрати зі збережених"
 
-#: app/templates/_post.html:51
+#: app/templates/_post.html:52
 msgid "Save"
 msgstr "Зберегти"
 
-#: app/templates/_post.html:55
+#: app/templates/_post.html:56
 msgid "Edit"
 msgstr "Редагувати"
 
-#: app/templates/_post.html:57
+#: app/templates/_post.html:58
 msgid "Delete this post?"
 msgstr "Видалити цей допис?"
 
-#: app/templates/_post.html:59
+#: app/templates/_post.html:60
 msgid "Delete"
 msgstr "Видалити"
 
@@ -235,19 +328,27 @@ msgstr "Видалити"
 msgid "Welcome to GameLog"
 msgstr "Ласкаво просимо до GameLog"
 
-#: app/templates/base.html:48
+#: app/templates/base.html:37
+msgid "Scheduled"
+msgstr "Відкладені"
+
+#: app/templates/base.html:40
+msgid "Pro"
+msgstr "Pro"
+
+#: app/templates/base.html:54
 msgid "Login"
 msgstr "Вхід"
 
-#: app/templates/base.html:52 app/templates/messages.html:4
+#: app/templates/base.html:58 app/templates/messages.html:4
 msgid "Messages"
 msgstr "Повідомлення"
 
-#: app/templates/base.html:62
+#: app/templates/base.html:68
 msgid "Profile"
 msgstr "Профіль"
 
-#: app/templates/base.html:65
+#: app/templates/base.html:71
 msgid "Logout"
 msgstr "Вийти"
 
@@ -256,13 +357,13 @@ msgstr "Вийти"
 msgid "Hi, %(username)s!"
 msgstr "Привіт, %(username)s!"
 
-#: app/templates/index.html:16 app/templates/saved.html:15
-#: app/templates/search.html:12 app/templates/user.html:47
+#: app/templates/index.html:24 app/templates/saved.html:15
+#: app/templates/search.html:12 app/templates/user.html:49
 msgid "Newer posts"
 msgstr "Новіші дописи"
 
-#: app/templates/index.html:21 app/templates/saved.html:20
-#: app/templates/search.html:17 app/templates/user.html:52
+#: app/templates/index.html:29 app/templates/saved.html:20
+#: app/templates/search.html:17 app/templates/user.html:54
 msgid "Older posts"
 msgstr "Старіші дописи"
 
@@ -286,6 +387,22 @@ msgstr "Цей список бачите лише ви."
 msgid "You have not saved any posts yet."
 msgstr "Ви ще не зберегли жодного допису."
 
+#: app/templates/scheduled.html:8
+msgid "Get GameLog Pro"
+msgstr "Отримати GameLog Pro"
+
+#: app/templates/scheduled.html:16
+msgid "Will be published"
+msgstr "Буде опубліковано"
+
+#: app/templates/scheduled.html:21
+msgid "Cancel"
+msgstr "Скасувати"
+
+#: app/templates/scheduled.html:26
+msgid "You have no scheduled posts."
+msgstr "У вас немає відкладених дописів."
+
 #: app/templates/search.html:4
 msgid "Search Results"
 msgstr "Результати пошуку"
@@ -299,37 +416,37 @@ msgstr "Надіслати повідомлення користувачу %(rec
 msgid "User"
 msgstr "Користувач"
 
-#: app/templates/user.html:11 app/templates/user_popup.html:7
+#: app/templates/user.html:13 app/templates/user_popup.html:7
 msgid "Last seen on"
 msgstr "Востаннє в мережі"
 
-#: app/templates/user.html:13 app/templates/user_popup.html:9
+#: app/templates/user.html:15 app/templates/user_popup.html:9
 #, python-format
 msgid "%(count)d followers"
 msgstr "Підписників: %(count)d"
 
-#: app/templates/user.html:13 app/templates/user_popup.html:9
+#: app/templates/user.html:15 app/templates/user_popup.html:9
 #, python-format
 msgid "%(count)d following"
 msgstr "Підписок: %(count)d"
 
-#: app/templates/user.html:15
+#: app/templates/user.html:17
 msgid "Edit your profile"
 msgstr "Редагувати свій профіль"
 
-#: app/templates/user.html:17
+#: app/templates/user.html:19
 msgid "Export your posts"
 msgstr "Експортувати свої дописи"
 
-#: app/templates/user.html:23 app/templates/user_popup.html:15
+#: app/templates/user.html:25 app/templates/user_popup.html:15
 msgid "Follow"
 msgstr "Підписатися"
 
-#: app/templates/user.html:30 app/templates/user_popup.html:22
+#: app/templates/user.html:32 app/templates/user_popup.html:22
 msgid "Unfollow"
 msgstr "Відписатися"
 
-#: app/templates/user.html:35
+#: app/templates/user.html:37
 msgid "Send private message"
 msgstr "Надіслати особисте повідомлення"
 
@@ -352,6 +469,92 @@ msgstr "Скиньте його"
 #: app/templates/auth/reset_password.html:5
 msgid "Reset Your Password"
 msgstr "Скидання пароля"
+
+#: app/templates/billing/checkout.html:8
+msgid "Test mode: no real money is charged. Use one of these test cards:"
+msgstr ""
+"Тестовий режим: справжні гроші не списуються. Використайте одну з тестових "
+"карток:"
+
+#: app/templates/billing/checkout.html:10
+msgid "successful payment"
+msgstr "успішна оплата"
+
+#: app/templates/billing/checkout.html:11
+msgid "card declined"
+msgstr "картку відхилено"
+
+#: app/templates/billing/checkout.html:12
+msgid "insufficient funds"
+msgstr "недостатньо коштів"
+
+#: app/templates/billing/subscription.html:6
+msgid ""
+"Test mode: no real money is charged. Use the test cards shown on the "
+"checkout page."
+msgstr ""
+"Тестовий режим: справжні гроші не списуються. Тестові картки показано на "
+"сторінці оплати."
+
+#: app/templates/billing/subscription.html:11
+msgid "Your subscription is active until"
+msgstr "Ваша підписка діє до"
+
+#: app/templates/billing/subscription.html:14
+msgid "You do not have an active subscription."
+msgstr "У вас немає активної підписки."
+
+#: app/templates/billing/subscription.html:16
+msgid "GameLog Pro gives you scheduled posts and a PRO badge next to your name."
+msgstr "GameLog Pro дає відкладені дописи й значок PRO біля вашого імені."
+
+#: app/templates/billing/subscription.html:26
+msgid "Extend"
+msgstr "Продовжити"
+
+#: app/templates/billing/subscription.html:26
+msgid "Buy"
+msgstr "Купити"
+
+#: app/templates/billing/subscription.html:34
+msgid "Payment history"
+msgstr "Історія платежів"
+
+#: app/templates/billing/subscription.html:38
+msgid "Date"
+msgstr "Дата"
+
+#: app/templates/billing/subscription.html:39
+msgid "Plan"
+msgstr "План"
+
+#: app/templates/billing/subscription.html:40
+msgid "Amount"
+msgstr "Сума"
+
+#: app/templates/billing/subscription.html:41
+msgid "Card"
+msgstr "Картка"
+
+#: app/templates/billing/subscription.html:42
+msgid "Status"
+msgstr "Статус"
+
+#: app/templates/billing/subscription.html:52
+msgid "Paid"
+msgstr "Оплачено"
+
+#: app/templates/billing/subscription.html:54
+msgid "Failed"
+msgstr "Помилка"
+
+#: app/templates/billing/subscription.html:57
+msgid "Processing"
+msgstr "Обробляється"
+
+#: app/templates/billing/subscription.html:64
+msgid "No payments yet."
+msgstr "Платежів ще немає."
 
 #: app/templates/errors/403.html:4
 msgid "Forbidden"

@@ -1,15 +1,17 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from urllib.parse import urlsplit
 from flask import render_template, flash, redirect, url_for, request, g, \
     current_app, abort
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 import sqlalchemy as sa
+import redis
 from langdetect import detect, LangDetectException
 from app import db
 from app.main.forms import EditProfileForm, EmptyForm, PostForm, SearchForm, \
-    MessageForm
-from app.models import User, Post, Message, Notification
+    MessageForm, EditPostForm
+from app.models import User, Post, Message, Notification, ScheduledPost
+from app.email import queue_notification_email
 from app.translate import translate
 from app.main import bp
 
@@ -34,6 +36,8 @@ def index():
             language = detect(form.post.data)
         except LangDetectException:
             language = ''
+        if form.publish_at.data:
+            return schedule_post(form, language)
         post = Post(body=form.post.data, author=current_user,
                     language=language)
         db.session.add(post)
@@ -51,6 +55,35 @@ def index():
     return render_template('index.html', title=_('Home'), form=form,
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+def schedule_post(form, language):
+    if not current_user.is_pro():
+        flash(_('Scheduled posts are available with GameLog Pro.'))
+        return redirect(url_for('billing.subscription'))
+    # браузер надсилає місцевий час, переводимо його в UTC
+    publish_at = form.publish_at.data + timedelta(
+        minutes=form.tz_offset.data or 0)
+    publish_at = publish_at.replace(tzinfo=timezone.utc)
+    if publish_at <= datetime.now(timezone.utc):
+        flash(_('The publication time must be in the future.'))
+        return redirect(url_for('main.index'))
+    scheduled_post = ScheduledPost(body=form.post.data, language=language,
+                                   publish_at=publish_at, author=current_user)
+    db.session.add(scheduled_post)
+    db.session.commit()
+    try:
+        job = current_app.task_queue.enqueue_at(
+            publish_at, 'app.tasks.publish_scheduled_post', scheduled_post.id)
+    except redis.exceptions.RedisError:
+        db.session.delete(scheduled_post)
+        db.session.commit()
+        flash(_('The task queue is not available, please try again later.'))
+        return redirect(url_for('main.index'))
+    scheduled_post.job_id = job.get_id()
+    db.session.commit()
+    flash(_('Your post has been scheduled.'))
+    return redirect(url_for('main.scheduled'))
 
 
 def redirect_back():
@@ -111,12 +144,14 @@ def edit_profile():
     if form.validate_on_submit():
         current_user.username = form.username.data
         current_user.about_me = form.about_me.data
+        current_user.email_notifications = form.email_notifications.data
         db.session.commit()
         flash(_('Your changes have been saved.'))
         return redirect(url_for('main.edit_profile'))
     elif request.method == 'GET':
         form.username.data = current_user.username
         form.about_me.data = current_user.about_me
+        form.email_notifications.data = current_user.email_notifications
     return render_template('edit_profile.html', title=_('Edit Profile'),
                            form=form)
 
@@ -134,8 +169,15 @@ def follow(username):
         if user == current_user:
             flash(_('You cannot follow yourself!'))
             return redirect(url_for('main.user', username=username))
+        was_following = current_user.is_following(user)
         current_user.follow(user)
         db.session.commit()
+        if not was_following:
+            queue_notification_email(
+                user, '[GameLog] You have a new follower', 'new_follower',
+                follower=current_user.username,
+                link=url_for('main.user', username=current_user.username,
+                             _external=True))
         flash(_('You are following %(username)s!', username=username))
         return redirect(url_for('main.user', username=username))
     else:
@@ -200,6 +242,10 @@ def send_message(recipient):
         user.add_notification('unread_message_count',
                               user.unread_message_count())
         db.session.commit()
+        queue_notification_email(
+            user, '[GameLog] You have a new message', 'new_message',
+            sender_name=current_user.username, message=form.message.data,
+            link=url_for('main.messages', _external=True))
         flash(_('Your message has been sent.'))
         return redirect(url_for('main.user', username=recipient))
     return render_template('send_message.html', title=_('Send Message'),
@@ -257,7 +303,7 @@ def edit_post(id):
     post = db.get_or_404(Post, id)
     if post.author != current_user:
         abort(403)
-    form = PostForm()
+    form = EditPostForm()
     if form.validate_on_submit():
         try:
             language = detect(form.post.data)
@@ -294,8 +340,15 @@ def like(id):
     form = EmptyForm()
     if form.validate_on_submit():
         post = db.get_or_404(Post, id)
+        already_liked = current_user.has_liked(post)
         current_user.like(post)
         db.session.commit()
+        if not already_liked and post.author != current_user:
+            queue_notification_email(
+                post.author, '[GameLog] Someone liked your post', 'new_like',
+                liker=current_user.username, post_body=post.body,
+                link=url_for('main.user', username=post.author.username,
+                             _external=True))
     return redirect_back()
 
 
@@ -348,3 +401,28 @@ def saved():
     return render_template('saved.html', title=_('Saved'),
                            posts=posts.items, next_url=next_url,
                            prev_url=prev_url)
+
+
+@bp.route('/scheduled')
+@login_required
+def scheduled():
+    posts = db.session.scalars(current_user.get_scheduled_posts()).all()
+    return render_template('scheduled.html', title=_('Scheduled posts'),
+                           posts=posts)
+
+
+@bp.route('/scheduled/<int:id>/cancel', methods=['POST'])
+@login_required
+def cancel_scheduled(id):
+    form = EmptyForm()
+    if form.validate_on_submit():
+        scheduled_post = db.get_or_404(ScheduledPost, id)
+        if scheduled_post.author != current_user:
+            abort(403)
+        job = scheduled_post.get_rq_job()
+        if job is not None:
+            job.delete()  # прибираємо задачу з розкладу RQ
+        db.session.delete(scheduled_post)
+        db.session.commit()
+        flash(_('The scheduled post has been cancelled.'))
+    return redirect(url_for('main.scheduled'))

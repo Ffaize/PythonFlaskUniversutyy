@@ -1,0 +1,14 @@
+Dear {{ user.username }},
+
+Thank you for subscribing to GameLog Pro!
+
+Amount: {{ payment.amount }} UAH
+Card: **** {{ payment.card_last4 }}
+Transaction: {{ payment.transaction_id }}
+Pro is active until: {{ user.pro_until.strftime("%Y-%m-%d %H:%M") }} UTC
+
+This is a test payment, no real money was charged.
+
+Sincerely,
+
+The GameLog Team

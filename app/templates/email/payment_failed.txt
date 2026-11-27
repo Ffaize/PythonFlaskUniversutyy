@@ -1,0 +1,9 @@
+Dear {{ user.username }},
+
+Your payment of {{ payment.amount }} UAH with card **** {{ payment.card_last4 }} could not be completed:
+
+{{ payment.error }}
+
+Sincerely,
+
+The GameLog Team
